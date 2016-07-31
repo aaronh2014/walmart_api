@@ -47,69 +47,29 @@ def create_search_string(req):
     else:
         raise Exception('No Query.  ')
 
-
-def get_search_response(q):
-    #Queries Walmart Search API
+def get_search_response_itemId (sr):
     try:
-        sr = requests.get(q).json()
-        return sr
+        return sr['items'][0]['itemId']
     except:
-        raise Exception('get_search_response failed')
-
-
-def get_search_item(search_result,n):
-    #This function takes a search response and provides the itemId of the nth response
-    try:
-        iid = get_item_id(search_result['items'][n])
-        return iid
-    except:
-        raise Exception('get_search_item failed')
-
-
-def get_item_id(r):
-    # returns the itemId from a item response
-    try:
-        return r['itemId']
-    except:
-        raise Exception('No itemId')
-
-
-def get_product_rec(iid,api_key):
-    # queries the Walmart Product recommendation API
-    try:
-        pr_q = 'http://api.walmartlabs.com/v1/nbp?apiKey=%s&itemId=%s&format=json' % (api_key,iid)
-        products = requests.get(pr_q).json()
-        return products
-    except:
-        raise Exception('get_product_rec failed')
+        raise Exception('No items returned')
 
 
 def get_product_ids(p, n):
-    # returns a list of the first n item ids
+    # returns a list of up to the first n item ids
     try:
-        ids = []
-        for i in p[:n]:
-            ids.append(get_item_id(i))
-        return ids
+        #return map(lambda x : get_item_id(x) ,p[:n])
+        return map(lambda x: x['itemId'], p[:n])
     except:
         raise Exception('No recommended products')
 
 
-def get_product_review(iid,api_key):
-    # queries Walmart Review Api
-    try:
-        query = 'http://api.walmartlabs.com/v1/reviews/%s?apiKey=%s&format=json' % (iid,api_key)
-        return requests.get(query).json()
-    except:
-        raise Exception('get_product_review failed')
-
-
 def product_ratings(iids, api_key, n):
-    # Returns a sorted list of n product ids with average rating.  Products without reviews are at the bottom
+    # Returns a sorted list of up to n product ids with average rating.  Products without reviews are assigned -1
     try:
         rating = []
         for i in iids:
-            r = get_product_review(i,api_key).get('reviewStatistics',None)
+            query = 'http://api.walmartlabs.com/v1/reviews/%s?apiKey=%s&format=json' % (i,api_key)
+            r = requests.get(query).json().get('reviewStatistics',None)
             avg_rating = -1
             if r is not None:
                 avg_rating = float(r['averageOverallRating'])
@@ -122,15 +82,13 @@ def product_ratings(iids, api_key, n):
 
 @app.route('/')
 def hello_world():
-    search_q = 'Nothing'
     iid = 'None'
     try:
         search_q, api_key = create_search_string(request)
-        search_response = get_search_response(search_q)
-        iid = get_search_item(search_response,0)
+        iid = get_search_response_itemId(requests.get(search_q).json())
 
-        recs = get_product_rec(iid, api_key)
-        ids = get_product_ids(recs, 10)
+        pr_q = 'http://api.walmartlabs.com/v1/nbp?apiKey=%s&itemId=%s&format=json' % (api_key, iid)
+        ids = get_product_ids(requests.get(pr_q).json(), 10)
 
         ratings = product_ratings(ids, api_key, 10)
 
