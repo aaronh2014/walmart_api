@@ -4,27 +4,23 @@ import time
 
 from sys import argv
 
-def RateLimited(maxPerSecond):
-    minInterval = 1.0 / float(maxPerSecond)
-
+def rate_limited(max_per_second):
+    min_interval = 1.0 / float(max_per_second)
     def decorate(func):
-        lastTimeCalled = [0.0]
-
-        def rateLimitedFunction(*args, **kargs):
-            elapsed = time.clock() - lastTimeCalled[0]
-            leftToWait = minInterval - elapsed
-            if leftToWait > 0:
-                time.sleep(leftToWait)
+        last_time_called = [0.0]
+        def rate_limited_function(*args, **kargs):
+            elapsed = time.clock() - last_time_called[0]
+            left_to_wait = min_interval - elapsed
+            if left_to_wait > 0:
+                time.sleep(left_to_wait)
             ret = func(*args, **kargs)
-            lastTimeCalled[0] = time.clock()
+            last_time_called[0] = time.clock()
             return ret
-
-        return rateLimitedFunction
-
+        return rate_limited_function
     return decorate
 
 
-@RateLimited(5)  # 5 per second at most
+@rate_limited(5)  # 5 per second at most
 def query_walmart_api(q):
     return requests.get(q)
 
@@ -45,11 +41,13 @@ def get_product_ids(p, n):
 
 
 def product_ratings(iids, api_key, n):
-    # Returns a sorted list of up to n product ids with average rating.  Products without reviews are assigned -1
+    # Returns a sorted list of up to n product ids with average rating.
+    #   Products without reviews are assigned -1
     try:
         rating = []
         for i in iids:
-            query = 'http://api.walmartlabs.com/v1/reviews/%s?apiKey=%s&format=json' % (i,api_key)
+            query = \
+                'http://api.walmartlabs.com/v1/reviews/%s?apiKey=%s&format=json' % (i,api_key)
             r = query_walmart_api(query).json().get('reviewStatistics',None)
             avg_rating = -1
             if r is not None:

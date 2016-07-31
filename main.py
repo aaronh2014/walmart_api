@@ -5,27 +5,23 @@ from flask import Flask, request
 app = Flask(__name__)
 
 
-def RateLimited(maxPerSecond):
-    minInterval = 1.0 / float(maxPerSecond)
-
+def rate_limited(max_per_second):
+    min_interval = 1.0 / float(max_per_second)
     def decorate(func):
-        lastTimeCalled = [0.0]
-
-        def rateLimitedFunction(*args, **kargs):
-            elapsed = time.clock() - lastTimeCalled[0]
-            leftToWait = minInterval - elapsed
-            if leftToWait > 0:
-                time.sleep(leftToWait)
+        last_time_called = [0.0]
+        def rate_limited_function(*args, **kargs):
+            elapsed = time.clock() - last_time_called[0]
+            left_to_wait = min_interval - elapsed
+            if left_to_wait > 0:
+                time.sleep(left_to_wait)
             ret = func(*args, **kargs)
-            lastTimeCalled[0] = time.clock()
+            last_time_called[0] = time.clock()
             return ret
-
-        return rateLimitedFunction
-
+        return rate_limited_function
     return decorate
 
 
-@RateLimited(5)  # 5 per second at most
+@rate_limited(5)  # 5 per second at most
 def query_walmart_api(q):
     return requests.get(q)
 
