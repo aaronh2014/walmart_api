@@ -1,7 +1,32 @@
 import requests
 import ConfigParser
+import time
 
 from sys import argv
+
+def RateLimited(maxPerSecond):
+    minInterval = 1.0 / float(maxPerSecond)
+
+    def decorate(func):
+        lastTimeCalled = [0.0]
+
+        def rateLimitedFunction(*args, **kargs):
+            elapsed = time.clock() - lastTimeCalled[0]
+            leftToWait = minInterval - elapsed
+            if leftToWait > 0:
+                time.sleep(leftToWait)
+            ret = func(*args, **kargs)
+            lastTimeCalled[0] = time.clock()
+            return ret
+
+        return rateLimitedFunction
+
+    return decorate
+
+
+@RateLimited(5)  # 5 per second at most
+def query_walmart_api(q):
+    return requests.get(q)
 
 
 def get_search_response_itemId (sr):
@@ -25,7 +50,7 @@ def product_ratings(iids, api_key, n):
         rating = []
         for i in iids:
             query = 'http://api.walmartlabs.com/v1/reviews/%s?apiKey=%s&format=json' % (i,api_key)
-            r = requests.get(query).json().get('reviewStatistics',None)
+            r = query_walmart_api(query).json().get('reviewStatistics',None)
             avg_rating = -1
             if r is not None:
                 avg_rating = float(r['averageOverallRating'])
@@ -47,19 +72,20 @@ def hello_world(q):
         api_key = config.get('Section1','api_key')
         search_q = 'http://api.walmartlabs.com/v1/search?apiKey=%s&query=%s&numItems=1&format=json' % (api_key,q)
 
-        iid = get_search_response_itemId(requests.get(search_q).json())
+        iid = get_search_response_itemId(query_walmart_api(search_q).json())
         print "First item id: %s" % iid
 
         pr_q = 'http://api.walmartlabs.com/v1/nbp?apiKey=%s&itemId=%s&format=json' % (api_key, iid)
-        ids = get_product_ids(requests.get(pr_q).json(), 10)
+        ids = get_product_ids(query_walmart_api(pr_q).json(), 10)
 
         ratings = product_ratings(ids, api_key, 10)
 
-        result = " Here are the results: "
+        result = " Here are %d recommended products, ranked by average customer review: " % len(ids)
         for i in ratings:
             result += "\n %s %s " % (i[0],i[1])
-        result += " %d" % len(ids)
+        result += " \nn = %d" % len(ids)
         print result
+        return len(ids)
     except Exception, err:
         print "Oops %s " % err.message
         return err.message
