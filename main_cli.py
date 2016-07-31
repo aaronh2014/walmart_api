@@ -36,16 +36,17 @@ def product_ratings(iids, api_key, n):
         raise Exception('product_ratings failed')
 
 
-def hello_world(argv):
+def hello_world(q):
+    #Searches for products based upon a user-provided search string
+    #Uses the first item in the search response to query the product recommendation search
+    #Retrieves 10 product recommendations
+    #Returns the fetched product recommendations order by average customer review
     try:
-        if len(argv) == 1:
-            raise Exception('No query specified')
-        q = argv[1]
         config = ConfigParser.RawConfigParser()
         config.read('config.ini')
         api_key = config.get('Section1','api_key')
-
         search_q = 'http://api.walmartlabs.com/v1/search?apiKey=%s&query=%s&numItems=1&format=json' % (api_key,q)
+
         iid = get_search_response_itemId(requests.get(search_q).json())
         print "First item id: %s" % iid
 
@@ -61,6 +62,10 @@ def hello_world(argv):
         print result
     except Exception, err:
         print "Oops %s " % err.message
+        return err.message
+
 
 if __name__ == '__main__':
-    hello_world(argv)
+    if len(argv) == 1:
+        raise Exception('No query specified')
+    hello_world(argv[1])

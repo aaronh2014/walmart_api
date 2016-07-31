@@ -82,6 +82,10 @@ def product_ratings(iids, api_key, n):
 
 @app.route('/')
 def hello_world():
+    # Searches for products based upon a user-provided search string
+    # Uses the first item in the search response to query the product recommendation search
+    # Retrieves 10 product recommendations
+    # Returns the fetched product recommendations order by average customer review
     iid = 'None'
     try:
         search_q, api_key = create_search_string(request)
