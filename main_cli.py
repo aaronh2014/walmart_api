@@ -36,7 +36,7 @@ def product_ratings(iids, api_key, n):
         raise Exception('product_ratings failed')
 
 
-def main(argv):
+def hello_world(argv):
     try:
         if len(argv) == 1:
             raise Exception('No query specified')
@@ -63,4 +63,4 @@ def main(argv):
         print "Oops %s " % err.message
 
 if __name__ == '__main__':
-    main(argv)
+    hello_world(argv)
