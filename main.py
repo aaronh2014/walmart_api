@@ -47,6 +47,7 @@ def create_search_string(req):
     else:
         raise Exception('No Query.  ')
 
+
 def get_search_response_itemId (sr):
     try:
         return sr['items'][0]['itemId']
@@ -57,7 +58,6 @@ def get_search_response_itemId (sr):
 def get_product_ids(p, n):
     # returns a list of up to the first n item ids
     try:
-        #return map(lambda x : get_item_id(x) ,p[:n])
         return map(lambda x: x['itemId'], p[:n])
     except:
         raise Exception('No recommended products')
